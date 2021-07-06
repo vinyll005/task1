@@ -11,30 +11,49 @@ class Users
 
     public function createUser($data)
     {
-        $dataJson = json_encode($data);
+        $users = $this->getUsers();
+        $users[] = $data;
+        $dataJson = json_encode($users);
 
-        if (file_exists($this->file)) {
-            file_put_contents($this->file, $dataJson . PHP_EOL, FILE_APPEND);
+        try {
+            if (file_exists($this->file)) {
+                file_put_contents($this->file, $dataJson);
+            }
+        } catch(Throwable $e) {
+            'Error on insert user: '. $e->getMessage();
         }
     }
 
     public function getUsers()
     {
-        $file = fopen($this->file, 'r');
-
-        $usersArr = array();
-        while (($line = fgets($file)) !== false) {
-            $usersArr[] = json_decode($line);
+        try {
+            $usersArr = json_decode(file_get_contents($this->file));
+        } catch(Throwable $e) {
+            'Error on get users: '. $e->getMessage();
         }
-        fclose($file);
         return $usersArr;
+    }
+
+    public function getUsersHtml()
+    {
+        $users = $this->getUsers();
+
+        $usersTable = '';
+        foreach ($users as $user) { 
+            $usersTable .= "<tr>
+                <td>$user->name</td>
+                <td>$user->surname</td>
+                <td>$user->age</td>
+            </tr>";
+        }
+        return $usersTable;
     }
 
     public function isAdmin($login, $password)
     {
-        $file = fopen($this->file, 'r');
+        $users = $this->getUsers();
+        $admin = $users[0];
 
-        $admin = json_decode(fgets($file));
         if ($login == $admin->login && password_verify($password, $admin->password)) {
             return true;
         } else {
@@ -59,6 +78,19 @@ class Users
             header('Location: /');
             die();
         }
+    }
+
+    public function checkUsersData($data)
+    {
+        $requiredFields = ['name', 'surname', 'age', 'login', 'password'];
+
+        $error = false;
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                $error = true;
+            }
+        }
+        return $error;
     }
 }
 

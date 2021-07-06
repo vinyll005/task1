@@ -1,15 +1,17 @@
 <?php
 
-class HomeController
-{
+class HomeController extends Controller
+{  
     public function actionIndex()
     {
+        $this->getViewsContent();
+
         if (!empty($_POST)) {
             $user = new Users;
             $isAdmin = $user->isAdmin(htmlentities($_POST['login']), htmlentities($_POST['password']));
             $user->loginAdmin($isAdmin);
         }
-        include_once(ROOT.'/Views/home.php');
+        return $this->view;
     }
 
     public function actionLogout()

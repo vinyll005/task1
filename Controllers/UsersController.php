@@ -1,25 +1,28 @@
 <?php
 
-class UsersController
+class UsersController extends Controller
 {
-    private $usersObj;
+    private $users;
     
-    public function __construct()
+    public function __construct($viewsFile)
     {
-        $this->usersObj = new Users;
-        $this->usersObj->checkAdmin();
+        parent::__construct($viewsFile);
+        $this->getViewsContent();
+        $this->users = new Users;
+        $this->users->checkAdmin();
     }
 
     public function actionIndex()
     {
-        $users = $this->usersObj->getUsers();
-        include_once(ROOT.'/Views/user.php');
+        $users = $this->users->getUsersHtml();
+        $this->view = str_replace('%usersTable%', $users, $this->view);
+        return $this->view;
     }
     
     public function actionCreate()
-    {   
+    {  
         if (!empty($_POST)) {
-            try {
+            if (!$this->users->checkUsersData($_POST)) {
                 $data = array(
                     'name' => htmlentities($_POST['name']),
                     'surname' => htmlentities($_POST['surname']),
@@ -27,16 +30,15 @@ class UsersController
                     'login' => htmlentities($_POST['login']),
                     'password' => password_hash(htmlentities($_POST['password']), PASSWORD_DEFAULT)
                 );
-            } catch (Exception $e) {
-                echo 'Error find '. $e->getMessage();
+               
+                $this->users->createUser($data);
+                header('Location: /users');
+                die();
+            } else {
+                throw new Exception('One of the fields is empty!');
             }
-
-            
-            $this->usersObj->createUser($data);
-            header('Location: /users');
-            die();
-        }
-        include_once(ROOT.'/Views/userCreate.php');
+        } 
+        return $this->view;
     }
 }
 
